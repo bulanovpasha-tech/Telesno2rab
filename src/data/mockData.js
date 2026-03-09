@@ -301,7 +301,7 @@ export const masters = [
     ],
     bioIntroRu: 'В своей практике сочетает:',
     bioIntroEn: 'Combines in practice:',
-    image: 'https://customer-assets.emergentagent.com/job_9da52546-8069-4452-96ab-36a538719de1/artifacts/u3c5l9x0_%D0%90%D0%BB%D0%B5%D0%BD%D0%B0.jpg',
+    image: '/milana.jpg',
     dikidiWidget: '205601'
   }
 ];
