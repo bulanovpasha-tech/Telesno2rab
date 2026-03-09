@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /static/
+Disallow: /*.json$
+Disallow: /*.js$
+Disallow: /*.css$
+
+Sitemap: https://tlsno.ru/sitemap.xml

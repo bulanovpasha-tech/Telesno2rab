@@ -1,0 +1,65 @@
+/* Premium TELESNO Brand Styles */
+
+.font-serif {
+    font-family: 'Playfair Display', serif;
+}
+
+.font-lato {
+    font-family: 'Lato', sans-serif;
+}
+
+/* Logo Styles */
+.logo-telesno {
+    font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+    font-size: 28px;
+    color: #C6A75E;
+    font-weight: 500;
+}
+
+/* Smooth Animations */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 1s ease-out forwards;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Premium hover effects */
+.transition-all {
+    transition-property: color, background-color, border-color, transform, box-shadow, opacity;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+/* Card hover lift */
+.group:hover {
+    transform: translateY(-4px);
+}
+
+/* Image overlay transitions */
+.group:hover .bg-gradient-to-t {
+    background: linear-gradient(to top, rgba(15, 42, 36, 0.9), transparent);
+}
+
+/* Remove default focus rings for mouse users, keep for keyboard */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px solid #C6A75E;
+    outline-offset: 2px;
+}
