@@ -1,4 +1,5 @@
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || '';
+const CRM_BASE_URL = process.env.REACT_APP_CRM_URL || '';
 
 // Generic fetch wrapper with error handling
 async function fetchApi(endpoint, options = {}) {
@@ -22,6 +23,21 @@ async function fetchApi(endpoint, options = {}) {
   return response.json();
 }
 
+// CRM fetch — для данных из CRM (мастера, без авторизации)
+async function fetchCrm(endpoint) {
+  if (!CRM_BASE_URL) {
+    throw new Error('REACT_APP_CRM_URL not set');
+  }
+  const url = `${CRM_BASE_URL}/api${endpoint}`;
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`CRM API Error: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
 // Services API
 export const servicesApi = {
   getAll: () => fetchApi('/services'),
@@ -34,10 +50,14 @@ export const subscriptionsApi = {
   getById: (id) => fetchApi(`/subscriptions/${id}`),
 };
 
-// Masters API
+// Masters API — берёт данные из CRM (публичный эндпоинт)
 export const mastersApi = {
-  getAll: () => fetchApi('/masters'),
-  getById: (id) => fetchApi(`/masters/${id}`),
+  getAll: () => fetchCrm('/employees/public'),
+  getById: (id) => fetchCrm(`/employees/public`).then(list => {
+    const found = list.find(e => e.id === id);
+    if (!found) throw new Error('Master not found');
+    return found;
+  }),
 };
 
 // Settings API
