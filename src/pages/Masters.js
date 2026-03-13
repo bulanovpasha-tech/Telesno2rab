@@ -5,25 +5,191 @@ import { mastersApi } from '../services/api';
 import { masters as mockMasters } from '../data/mockData';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, User } from 'lucide-react';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Dikidi-виджеты по имени мастера (из CRM берём имя, здесь маппим на виджет)
+// При добавлении нового мастера в CRM — добавьте строку сюда
+// ─────────────────────────────────────────────────────────────────────────────
+const DIKIDI_WIDGETS = {
+  'Наталья':  '205600',
+  'Natalya':  '205600',
+  'Милана':   '205601',
+  'Milana':   '205601',
+};
+const DIKIDI_DEFAULT = '205592'; // общая запись если мастер не найден в маппинге
+
+// Адаптер: CRM employee → формат для отображения
+function adaptEmployee(emp) {
+  return {
+    id:             emp.id,
+    name:           emp.name,
+    photo:          emp.photo || null,
+    specialization: emp.specializations || '',
+    bio:            emp.bio || '',
+    dikidiWidget:   DIKIDI_WIDGETS[emp.name] || DIKIDI_DEFAULT,
+    _fromCRM:       true,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Карточка мастера (CRM-данные)
+// ─────────────────────────────────────────────────────────────────────────────
+const MasterCardCRM = ({ master, t }) => {
+  const handleBook = () => {
+    const a = document.createElement('a');
+    a.href = `https://dikidi.net/#widget=${master.dikidiWidget}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  return (
+    <Card
+      className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col"
+      data-testid={`master-card-${master.id}`}
+    >
+      {/* Фото */}
+      <div className="relative overflow-hidden flex-shrink-0">
+        {master.photo ? (
+          <div
+            className="h-[500px] bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
+            style={{ backgroundImage: `url('${master.photo}')` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F2A24] via-transparent to-transparent" />
+          </div>
+        ) : (
+          /* Плейсхолдер если фото нет */
+          <div className="h-[500px] bg-[#0F2A24]/10 flex items-center justify-center group-hover:bg-[#0F2A24]/15 transition-colors">
+            <User className="w-24 h-24 text-[#C6A75E]/40" />
+          </div>
+        )}
+      </div>
+
+      <CardContent className="p-8 flex flex-col flex-1">
+        <h3 className="text-3xl font-serif text-[#0F2A24] mb-2">
+          {master.name}
+        </h3>
+
+        {master.specialization && (
+          <p className="text-[#C6A75E] font-medium mb-4">
+            {master.specialization}
+          </p>
+        )}
+
+        {master.bio && (
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            {master.bio}
+          </p>
+        )}
+
+        <Button
+          className="w-full bg-[#0F2A24] text-white hover:bg-[#C6A75E] hover:text-[#0F2A24] transition-colors mt-auto"
+          data-testid={`book-master-${master.id}`}
+          onClick={handleBook}
+        >
+          {t.masters.book}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Карточка мастера (mock-данные — для обратной совместимости)
+// ─────────────────────────────────────────────────────────────────────────────
+const MasterCardMock = ({ master, language, t }) => {
+  const handleBook = () => {
+    const a = document.createElement('a');
+    a.href = `https://dikidi.net/#widget=${master.dikidiWidget}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  return (
+    <Card
+      className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col"
+      data-testid={`master-card-${master.id}`}
+    >
+      <div className="relative overflow-hidden flex-shrink-0">
+        <div
+          className="h-[500px] bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
+          style={{ backgroundImage: `url('${master.image}')` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F2A24] via-transparent to-transparent" />
+        </div>
+      </div>
+      <CardContent className="p-8 flex flex-col flex-1">
+        {(language === 'ru' ? master.nameRu : master.nameEn) && (
+          <h3 className="text-3xl font-serif text-[#0F2A24] mb-2">
+            {language === 'ru' ? master.nameRu : master.nameEn}
+          </h3>
+        )}
+        {(language === 'ru' ? master.specializationRu : master.specializationEn) && (
+          <p className="text-[#C6A75E] font-medium mb-4">
+            {language === 'ru' ? master.specializationRu : master.specializationEn}
+          </p>
+        )}
+        {(language === 'ru' ? master.bioIntroRu : master.bioIntroEn) && (
+          <div className="mb-6">
+            <p className="text-gray-600 mb-3">
+              {language === 'ru' ? master.bioIntroRu : master.bioIntroEn}
+            </p>
+            {(language === 'ru' ? master.bioDetailsRu : master.bioDetailsEn) && (
+              <ul className="space-y-2">
+                {(language === 'ru' ? master.bioDetailsRu : master.bioDetailsEn).map((detail, idx) => (
+                  <li key={idx} className="text-gray-600 flex items-start text-sm leading-relaxed">
+                    <span className="text-[#C6A75E] mr-2 mt-0.5 flex-shrink-0">&#8226;</span>
+                    <span>{detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        {(language === 'ru' ? master.bioRu : master.bioEn) && (
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            {language === 'ru' ? master.bioRu : master.bioEn}
+          </p>
+        )}
+        <Button
+          className="w-full bg-[#0F2A24] text-white hover:bg-[#C6A75E] hover:text-[#0F2A24] transition-colors mt-auto"
+          data-testid={`book-master-${master.id}`}
+          onClick={handleBook}
+        >
+          {t.masters.book}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Страница мастеров
+// ─────────────────────────────────────────────────────────────────────────────
 const Masters = () => {
   const { language } = useLanguage();
   const t = translations[language];
 
-  // State for masters data
-  const [masters, setMasters] = useState(mockMasters);
+  const [masters, setMasters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fromCRM, setFromCRM] = useState(false);
 
-  // Fetch masters from API
   useEffect(() => {
     const fetchMasters = async () => {
       try {
         const data = await mastersApi.getAll();
-        setMasters(data);
+        if (data && data.length > 0) {
+          setMasters(data.map(adaptEmployee));
+          setFromCRM(true);
+        } else {
+          setMasters(mockMasters);
+        }
       } catch (err) {
+        console.error('CRM недоступна, используем mock:', err);
         setMasters(mockMasters);
-        console.error('Failed to fetch masters, using mock data:', err);
+        setFromCRM(false);
       } finally {
         setLoading(false);
       }
@@ -45,7 +211,7 @@ const Masters = () => {
         </div>
       </section>
 
-      {/* Loading State */}
+      {/* Loading */}
       {loading && (
         <div className="py-20 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#C6A75E]" />
@@ -54,124 +220,75 @@ const Masters = () => {
 
       {/* Masters Grid */}
       {!loading && (
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {masters.map(master => (
-              <Card key={master.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col" data-testid={`master-card-${master.id}`}>
+        <section className="py-20 px-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+
+              {/* Карточки мастеров */}
+              {masters.map(master =>
+                fromCRM ? (
+                  <MasterCardCRM key={master.id} master={master} t={t} />
+                ) : (
+                  <MasterCardMock key={master.id} master={master} language={language} t={t} />
+                )
+              )}
+
+              {/* Ищем в команду */}
+              <Card
+                className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col"
+                data-testid="join-team-card"
+              >
                 <div className="relative overflow-hidden flex-shrink-0">
-                  <div 
+                  <div
                     className="h-[500px] bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
-                    style={{ backgroundImage: `url('${master.image}')` }}
+                    style={{ backgroundImage: `url('https://images.unsplash.com/photo-1765745520336-88acf0b84fe4?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85')` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F2A24] via-transparent to-transparent"></div>
+                    <div className="absolute inset-0 bg-[#0F2A24]/50 group-hover:bg-[#0F2A24]/40 transition-all duration-300" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-4xl font-serif text-[#C6A75E]">?</span>
+                    </div>
                   </div>
                 </div>
                 <CardContent className="p-8 flex flex-col flex-1">
-                  {(language === 'ru' ? master.nameRu : master.nameEn) && (
-                    <h3 className="text-3xl font-serif text-[#0F2A24] mb-2">
-                      {language === 'ru' ? master.nameRu : master.nameEn}
-                    </h3>
-                  )}
-
-                  {(language === 'ru' ? master.specializationRu : master.specializationEn) && (
-                    <p className="text-[#C6A75E] font-medium mb-4">
-                      {language === 'ru' ? master.specializationRu : master.specializationEn}
-                    </p>
-                  )}
-
-                  {(language === 'ru' ? master.bioIntroRu : master.bioIntroEn) && (
-                    <div className="mb-6">
-                      <p className="text-gray-600 mb-3">
-                        {language === 'ru' ? master.bioIntroRu : master.bioIntroEn}
-                      </p>
-                      {(language === 'ru' ? master.bioDetailsRu : master.bioDetailsEn) && (
-                        <ul className="space-y-2">
-                          {(language === 'ru' ? master.bioDetailsRu : master.bioDetailsEn).map((detail, idx) => (
-                            <li key={idx} className="text-gray-600 flex items-start text-sm leading-relaxed">
-                              <span className="text-[#C6A75E] mr-2 mt-0.5 flex-shrink-0">&#8226;</span>
-                              <span>{detail}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-
-                  {(language === 'ru' ? master.bioRu : master.bioEn) && (
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                      {language === 'ru' ? master.bioRu : master.bioEn}
-                    </p>
-                  )}
-
-                  <Button
-                    className="w-full bg-[#0F2A24] text-white hover:bg-[#C6A75E] hover:text-[#0F2A24] transition-colors mt-auto"
-                    data-testid={`book-master-${master.id}`}
-                    onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = `https://dikidi.net/#widget=${master.dikidiWidget}`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    }}
-                  >
-                    {t.masters.book}
-                  </Button>
+                  <h3 className="text-3xl font-serif text-[#0F2A24] mb-4">
+                    {language === 'ru' ? 'Ищем в команду' : 'Join Our Team'}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed mb-3">
+                    {language === 'ru'
+                      ? 'Мы растём и ищем мастера, который разделяет наши ценности: внимание к человеку, бережное отношение к телу и стремление к качеству.'
+                      : 'We are growing and looking for a master who shares our values: attention to people, care for the body, and commitment to quality.'}
+                  </p>
+                  <p className="text-gray-600 leading-relaxed mb-2">
+                    {language === 'ru'
+                      ? 'Если вы практикуете массаж и хотите работать в пространстве, где важен каждый клиент — напишите нам.'
+                      : 'If you practice massage and want to work in a space where every client matters — contact us.'}
+                  </p>
+                  <a href="https://t.me/telesno_vlg" target="_blank" rel="noopener noreferrer" className="block mt-auto">
+                    <Button
+                      className="w-full bg-[#C6A75E] text-[#0F2A24] hover:bg-[#0F2A24] hover:text-white transition-colors"
+                      data-testid="join-team-btn"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {language === 'ru' ? 'Хочу к Вам' : 'I want to join'}
+                    </Button>
+                  </a>
                 </CardContent>
               </Card>
-            ))}
 
-            {/* Join Our Team Card */}
-            <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 group h-full flex flex-col" data-testid="join-team-card">
-              <div className="relative overflow-hidden flex-shrink-0">
-                <div 
-                  className="h-[500px] bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
-                  style={{ backgroundImage: `url('https://images.unsplash.com/photo-1765745520336-88acf0b84fe4?crop=entropy&cs=srgb&fm=jpg&ixlib=rb-4.1.0&q=85')` }}
-                >
-                  <div className="absolute inset-0 bg-[#0F2A24]/50 group-hover:bg-[#0F2A24]/40 transition-all duration-300"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-4xl font-serif text-[#C6A75E]">?</span>
-                  </div>
-                </div>
-              </div>
-              <CardContent className="p-8 flex flex-col flex-1">
-                <h3 className="text-3xl font-serif text-[#0F2A24] mb-4">
-                  {language === 'ru' ? 'Ищем в команду' : 'Join Our Team'}
-                </h3>
-                <p className="text-gray-600 leading-relaxed mb-3">
-                  {language === 'ru' 
-                    ? 'Мы растём и ищем мастера, который разделяет наши ценности: внимание к человеку, бережное отношение к телу и стремление к качеству.' 
-                    : 'We are growing and looking for a master who shares our values: attention to people, care for the body, and commitment to quality.'}
-                </p>
-                <p className="text-gray-600 leading-relaxed mb-2">
-                  {language === 'ru' 
-                    ? 'Если вы практикуете массаж и хотите работать в пространстве, где важен каждый клиент — напишите нам.' 
-                    : 'If you practice massage and want to work in a space where every client matters — contact us.'}
-                </p>
-                <a href="https://t.me/telesno_vlg" target="_blank" rel="noopener noreferrer" className="block mt-auto">
-                  <Button className="w-full bg-[#C6A75E] text-[#0F2A24] hover:bg-[#0F2A24] hover:text-white transition-colors" data-testid="join-team-btn">
-                    <Send className="w-4 h-4 mr-2" />
-                    {language === 'ru' ? 'Хочу к Вам' : 'I want to join'}
-                  </Button>
-                </a>
-              </CardContent>
-            </Card>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* Philosophy Section */}
-      <section 
+      <section
         className="py-32 px-4 bg-cover bg-center relative"
         style={{ backgroundImage: `url('https://customer-assets.emergentagent.com/job_9da52546-8069-4452-96ab-36a538719de1/artifacts/miqvespr_%D0%A4%D0%BE%D1%82%D0%BE06.png')` }}
       >
-        <div className="absolute inset-0 bg-[#0F2A24]/85"></div>
+        <div className="absolute inset-0 bg-[#0F2A24]/85" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <h2 className="text-4xl font-serif text-[#C6A75E] mb-6">
-            {language === 'ru' 
-              ? 'Профессионализм и забота'
-              : 'Professionalism and Care'}
+            {language === 'ru' ? 'Профессионализм и забота' : 'Professionalism and Care'}
           </h2>
           <p className="text-lg text-white/90 leading-relaxed">
             {language === 'ru'
